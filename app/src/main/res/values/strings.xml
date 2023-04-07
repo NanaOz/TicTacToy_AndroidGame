@@ -10,4 +10,7 @@
     <string name="settings_horizontal">Ряд по горизонтали</string>
     <string name="settings_diagonal">Ряд по диагонали</string>
     <string name="title_back">Назад</string>
+    <string name="dialog_continue">Продолжить игру</string>
+    <string name="dialog_settings">Настройки</string>
+    <string name="dialog_exit">Сохранить и выйти</string>
 </resources>
