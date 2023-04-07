@@ -105,7 +105,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun getSettingsInfo() : SettingsInfo {
         with(getSharedPreferences(getString(R.string.preference_file_key), MODE_PRIVATE)) {
-            val soundValue = getInt("sound_value, 0")
+            val soundValue = getInt("sound_value", 0)
             val lvl = getInt("lvl", 0)
             val rules = getInt("rules", 0)
 
