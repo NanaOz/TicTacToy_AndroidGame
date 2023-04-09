@@ -37,38 +37,38 @@ class GameActivity : AppCompatActivity() {
         }
 
         binding.cell11.setOnClickListener {
-            makeStepOfUser(1, 1)
+            makeStepOfUser(0, 0)
         }
         binding.cell12.setOnClickListener {
-            makeStepOfUser(1, 2)
+            makeStepOfUser(0, 1)
         }
         binding.cell13.setOnClickListener {
-            makeStepOfUser(1, 3)
+            makeStepOfUser(0, 2)
         }
         binding.cell21.setOnClickListener {
-            makeStepOfUser(2, 1)
+            makeStepOfUser(1, 0)
         }
         binding.cell22.setOnClickListener {
-            makeStepOfUser(2, 2)
+            makeStepOfUser(1, 1)
         }
         binding.cell23.setOnClickListener {
-            makeStepOfUser(2, 3)
+            makeStepOfUser(1, 2)
         }
         binding.cell31.setOnClickListener {
-            makeStepOfUser(3, 1)
+            makeStepOfUser(2, 0)
         }
         binding.cell32.setOnClickListener {
-            makeStepOfUser(3, 2)
+            makeStepOfUser(2, 1)
         }
         binding.cell33.setOnClickListener {
-            makeStepOfUser(3, 3)
+            makeStepOfUser(2, 2)
         }
         setContentView(binding.root)
 
         val time = intent.getLongExtra(MainActivity.EXTRA_TIME, 0)
         val gameField = intent.getStringExtra(MainActivity.EXTRA_GAME_FIELD)
 
-        if(gameField != null && time != 0L && gameField != ""){
+        if (gameField != null && time != 0L && gameField != "") {
             restartGame(time, gameField)
         } else {
             initGameField()
@@ -82,6 +82,8 @@ class GameActivity : AppCompatActivity() {
 
         mediaPlayer.start()
 
+        binding.chronometer.start()
+
     }
 
     override fun onDestroy() {
@@ -94,7 +96,7 @@ class GameActivity : AppCompatActivity() {
         mediaPlayer.release()
     }
 
-    private fun setVolumeMediaPlayer(soundValue: Int){
+    private fun setVolumeMediaPlayer(soundValue: Int) {
         val volume = soundValue / 100.0
         mediaPlayer.setVolume(volume.toFloat(), volume.toFloat())
     }
@@ -117,15 +119,15 @@ class GameActivity : AppCompatActivity() {
         }
 
         when (position) {
-            "11" -> binding.cell11.setImageResource(resId)
-            "12" -> binding.cell12.setImageResource(resId)
-            "13" -> binding.cell13.setImageResource(resId)
-            "21" -> binding.cell21.setImageResource(resId)
-            "22" -> binding.cell22.setImageResource(resId)
-            "23" -> binding.cell23.setImageResource(resId)
-            "31" -> binding.cell31.setImageResource(resId)
-            "32" -> binding.cell32.setImageResource(resId)
-            "33" -> binding.cell33.setImageResource(resId)
+            "00" -> binding.cell11.setImageResource(resId)
+            "01" -> binding.cell12.setImageResource(resId)
+            "02" -> binding.cell13.setImageResource(resId)
+            "10" -> binding.cell21.setImageResource(resId)
+            "11" -> binding.cell22.setImageResource(resId)
+            "12" -> binding.cell23.setImageResource(resId)
+            "20" -> binding.cell31.setImageResource(resId)
+            "21" -> binding.cell32.setImageResource(resId)
+            "22" -> binding.cell33.setImageResource(resId)
         }
     }
 
@@ -140,9 +142,9 @@ class GameActivity : AppCompatActivity() {
             }
 
             if (!isFilledGame()) {
-                makeStepOfAI()
+                val resultCell = makeStepOfAI()
 
-                val statusAI = checkGameField(row, col, "0")
+                val statusAI = checkGameField(resultCell.row, resultCell.col, "0")
                 if (statusAI.status) {
                     showGameStatus(STATUS_PLAYER_LOSE)
                     return
@@ -166,24 +168,152 @@ class GameActivity : AppCompatActivity() {
         return gameField[row][col] == " "
     }
 
-    private fun makeStepOfAI() {
-        when(settingsInfo.lvl){
+    private fun makeStepOfAI() : CellGameField {
+        return when (settingsInfo.lvl) {
             0 -> makeStepOfAIEasyLvl()
             1 -> makeStepOfAIMediumLvl()
             2 -> makeStepOfAIHardLvl()
+            else -> CellGameField(0, 0)
         }
 
     }
 
-    private fun makeStepOfAIHardLvl() {
-        TODO("Not yet implemented")
+    data class CellGameField(val row: Int, val col: Int)
+
+    private fun makeStepOfAIHardLvl() :CellGameField {
+        var bestScore = Double.NEGATIVE_INFINITY
+        var move = CellGameField(0, 0)
+
+        var board = gameField.map { it.clone() }.toTypedArray()
+
+        board.forEachIndexed { indexRow, cols ->
+            cols.forEachIndexed { indexCol, cell ->
+                if (board[indexRow][indexCol] == " ") {
+                    board[indexRow][indexCol] = "0"
+                    val score = minimax(board, false)
+                    board[indexRow][indexCol] = " "
+                    if (score > bestScore) {
+                        bestScore = score
+                        move = CellGameField(indexRow, indexCol)
+                    }
+                }
+            }
+        }
+        makeStep(move.row, move.col, "0")
+
+        return move
     }
 
-    private fun makeStepOfAIMediumLvl() {
-        TODO("Not yet implemented")
+    private fun minimax(board: Array<Array<String>>, isMaximazing: Boolean): Double {
+        val result = checkWinner(board)
+        result?.let {
+//            return scores[result]!!
+            return (scores[result] as Double?)!!
+        }
+        if (isMaximazing) {
+            var bestScore = Double.NEGATIVE_INFINITY
+            board.forEachIndexed { indexRow, cols ->
+                cols.forEachIndexed { indexCol, cell ->
+                    if (board[indexRow][indexCol] == " ") {
+                        board[indexRow][indexCol] = "0"
+                        val score = minimax(board, false)
+                        board[indexRow][indexCol] = " "
+                        if (score > bestScore) {
+                            bestScore = score
+                        }
+                    }
+                }
+            }
+            return bestScore
+        } else {
+            var bestScore = Double.POSITIVE_INFINITY
+            board.forEachIndexed { indexRow, cols ->
+                cols.forEachIndexed { indexCol, cell ->
+                    if (board[indexRow][indexCol] == " ") {
+                        board[indexRow][indexCol] = "X"
+                        val score = minimax(board, true)
+                        board[indexRow][indexCol] = " "
+                        if (score < bestScore) {
+                            bestScore = score
+                        }
+                    }
+                }
+            }
+            return bestScore
+        }
     }
 
-    private fun makeStepOfAIEasyLvl () {
+    private fun checkWinner(board: Array<Array<String>>): Int? {
+        var countRowsHu = 0
+        var countRowsAI = 0
+        var countLRHu = 0
+        var countLRAI = 0
+        var countRDHu = 0
+        var countRDAI = 0
+
+        board.forEachIndexed { indexRow, cols ->
+            if (cols.all { it == "X" })
+                return STATUS_PLAYER_WIN
+            else if (cols.all { it == "0" })
+                return STATUS_PLAYER_LOSE
+            countRowsHu = 0
+            countRowsAI = 0
+
+            cols.forEachIndexed { indexCol, cell ->
+                if (board[indexCol][indexRow] == "X")
+                    countRowsHu++
+                else if (board[indexCol][indexRow] == "0")
+                    countRowsAI++
+
+                if (indexRow == indexCol && board[indexCol][indexRow] == "X")
+                    countLRHu++
+                else if (indexRow == indexCol && board[indexCol][indexRow] == "0")
+                    countLRAI++
+
+                if (indexRow == 2 - indexCol && board[indexCol][indexRow] == "X")
+                    countRDHu++
+                else if (indexRow == 2 - indexCol && board[indexCol][indexRow] == "0")
+                    countRDAI++
+            }
+
+            if (countRowsHu == 3 || countLRHu == 3 || countRDHu == 3)
+                return STATUS_PLAYER_WIN
+            else if (countRowsAI == 3 || countLRAI == 3 || countRDAI == 3)
+                return STATUS_PLAYER_LOSE
+        }
+        board.forEach {
+            if (it.find { it == " " } != null)
+                return null
+        }
+        return STATUS_PLAYER_DRAW
+    }
+
+
+    private fun makeStepOfAIMediumLvl() :CellGameField {
+        var bestScore = Double.NEGATIVE_INFINITY
+        var move = CellGameField(0, 0)
+
+        var board = gameField.map { it.clone() }.toTypedArray()
+
+        board.forEachIndexed { indexRow, cols ->
+            cols.forEachIndexed { indexCol, cell ->
+                if (board[indexRow][indexCol] == " ") {
+                    board[indexRow][indexCol] = "0"
+                    val score = minimax(board, false)
+                    board[indexRow][indexCol] = " "
+                    if (score > bestScore) {
+                        bestScore = score
+                        move = CellGameField(indexRow, indexCol)
+                    }
+                }
+            }
+        }
+        makeStep(move.row, move.col, "0")
+
+        return move
+    }
+
+    private fun makeStepOfAIEasyLvl() : CellGameField{
         var randRow = 0
         var randCol = 0
 
@@ -193,9 +323,11 @@ class GameActivity : AppCompatActivity() {
         } while (!isEmptyField(randRow, randCol))
 
         makeStep(randRow, randCol, "0")
+
+        return CellGameField(randRow, randCol)
     }
 
-    private fun checkGameField(row: Int, col: Int, symbol: String): StatusInfo {
+    private fun checkGameField(x: Int, y: Int, symbol: String): StatusInfo {
         var row = 0
         var col = 0
         var leftDiagonal = 0
@@ -203,33 +335,33 @@ class GameActivity : AppCompatActivity() {
         var n = gameField.size
 
         for (i in 0..2) {
-            if (gameField[row][i] == symbol)
+            if (gameField[x][i] == symbol)
                 col++
-            else if (gameField[i][col] == symbol)
+            if (gameField[i][y] == symbol)
                 row++
-            else if (gameField[i][i] == symbol)
+            if (gameField[i][i] == symbol)
                 leftDiagonal++
-            else if (gameField[i][n - i - 1] == symbol)
+            if (gameField[i][n - i - 1] == symbol)
                 rightDiagonal++
         }
 
         return when (settingsInfo.rules) {
             1 -> {
-                if (col == n )
+                if (col == n)
                     StatusInfo(true, symbol)
                 else
                     StatusInfo(false, "")
 
             }
             2 -> {
-                if (row == n )
+                if (row == n)
                     StatusInfo(true, symbol)
                 else
                     StatusInfo(false, "")
 
             }
             3 -> {
-                if (col == n || row == n )
+                if (col == n || row == n)
                     StatusInfo(true, symbol)
                 else
                     StatusInfo(false, "")
@@ -301,6 +433,23 @@ class GameActivity : AppCompatActivity() {
 
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == REQUEST_POPUP_MENU) {
+            if (resultCode == RESULT_OK) {
+                settingsInfo = getSettingsInfo()
+
+                mediaPlayer = MediaPlayer.create(this, R.raw.mus)
+                mediaPlayer.isLooping = true
+                setVolumeMediaPlayer(settingsInfo.soundValue)
+
+                mediaPlayer.start()
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data)
+        }
+
+    }
+
     private fun showPopupMenu() {
         val dialog = Dialog(this, R.style.Theme_TicTacToy)
         with(dialog) {
@@ -320,10 +469,9 @@ class GameActivity : AppCompatActivity() {
         toSettings.setOnClickListener {
             dialog.hide()
             val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
+            startActivityForResult(intent, REQUEST_POPUP_MENU)
 
-            settingsInfo = getSettingsInfo()
-            setVolumeMediaPlayer(settingsInfo.soundValue)
+
         }
 
         toExit.setOnClickListener {
@@ -379,9 +527,9 @@ class GameActivity : AppCompatActivity() {
 
     private fun getSettingsInfo(): SettingsActivity.SettingsInfo {
         with(getSharedPreferences(getString(R.string.preference_file_key), MODE_PRIVATE)) {
-            val soundValue = getInt(SettingsActivity.PREF_SOUND_VALUE, 0)
+            val soundValue = getInt(SettingsActivity.PREF_SOUND_VALUE, 50)
             val lvl = getInt(SettingsActivity.PREF_LVL, 0)
-            val rules = getInt(SettingsActivity.PREF_RULES, 0)
+            val rules = getInt(SettingsActivity.PREF_RULES, 7)
 
             return SettingsActivity.SettingsInfo(soundValue, lvl, rules)
         }
@@ -393,5 +541,11 @@ class GameActivity : AppCompatActivity() {
         const val STATUS_PLAYER_DRAW = 3
         const val PREF_TIME = "pref_time"
         const val PREF_GAME_FIELD = "pref_game_field"
+        const val REQUEST_POPUP_MENU = 123
+        val scores = hashMapOf(
+            Pair(STATUS_PLAYER_WIN, -1.0), Pair(STATUS_PLAYER_LOSE, 1.0), Pair(
+                STATUS_PLAYER_DRAW, 0
+            )
+        )
     }
 }
