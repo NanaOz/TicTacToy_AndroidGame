@@ -5,10 +5,15 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import nana.tictactoy.databinding.ActivityMainBinding
 
+const val EXTRA_TIME = "nana.tictactoy.TIME"
+const val EXTRA_GAME_FIELD = "nana.tictactoy.GAME_FIELD"
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding;
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        setTheme(R.style.Theme_TicTacToy)
         super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -18,38 +23,34 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        binding.continueGame.setOnClickListener{
-            val date = getInfoAboutGame()
+        binding.continueGame.setOnClickListener {
+            val gameInfo = getInfoAboutLastGame()
             val intent = Intent(this, GameActivity::class.java).apply {
-                putExtra(EXTRA_TIME, date.time)
-                putExtra(EXTRA_GAME_FIELD, date.gameField)
+                putExtra(EXTRA_TIME, gameInfo.time)
+                putExtra(EXTRA_GAME_FIELD, gameInfo.gameField)
             }
             startActivity(intent)
         }
 
-        binding.settings.setOnClickListener{
+        binding.settings.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
         }
         setContentView(binding.root)
     }
 
-    private fun getInfoAboutGame() : InfoGame {
-        with(getSharedPreferences(getString(R.string.preference_file_key), MODE_PRIVATE)) {
-            val time = getLong(GameActivity.PREF_TIME, 0L)
-            val gameField = getString(GameActivity.PREF_GAME_FIELD, "")
+    private fun getInfoAboutLastGame(): InfoGame {
+        with(getSharedPreferences("game", MODE_PRIVATE)) {
+            val time = getLong("time", 0)
+            val gameField = getString("gameField", "")
 
-            return if(gameField != null) {
+            return if (gameField != null) {
                 InfoGame(time, gameField)
             } else {
-                InfoGame(0L, "")
+                InfoGame(0, "")
             }
         }
     }
-    data class InfoGame(val time: Long, val gameField: String)
 
-    companion object{
-        const val EXTRA_TIME = "extra_time"
-        const val EXTRA_GAME_FIELD = "extra_game_field"
-    }
+    data class InfoGame(val time: Long, val gameField: String)
 }

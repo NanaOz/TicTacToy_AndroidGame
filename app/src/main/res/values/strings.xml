@@ -24,4 +24,6 @@
     <string name="dialog_status_win">Вы выиграли!</string>
     <string name="dialog_status_lose">Вы проиграли!</string>
     <string name="dialog_status_draw">Ничья!</string>
+    <string name="popup_titl_menu">Меню</string>
+    <string name="popup_close">OK!</string>
 </resources>
